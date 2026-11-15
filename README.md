@@ -13,6 +13,27 @@ AMS slot that was used.
 [Releases](https://github.com/wendsell/simplyusage/releases) ·
 [Report a problem](https://github.com/wendsell/simplyusage/issues)
 
+## Why you'd want this
+
+You like SimplyPrint for what it does around the printer: remote monitoring,
+print history, and a filament inventory that knows what's on each spool. But
+you slice on the desktop. Bambu Studio or Orca is where your tuned profiles,
+painted multi-color models and MakerWorld projects live, so you hit
+**Print** there and send the job over LAN. SimplyPrint's web slicer and print
+queue rarely get touched.
+
+That's the catch: SimplyPrint only deducts filament for prints it starts. Every
+job from your desktop slicer still shows up in SimplyPrint, but with 0 g used,
+and your spool weights slowly drift from reality. The inventory says 600 g
+left on a spool that's nearly empty, and you find out when the print runs out
+halfway, or when you reorder the wrong colors.
+
+simplyusage lets you keep both: slice and send however you like, and
+SimplyPrint's spool weights still match what's actually on the spool.
+
+**You don't need it** if you start all your prints from SimplyPrint, since it
+already counts those.
+
 ## Features
 
 - **Multi-color aware.** Each filament is matched to its AMS slot and deducted

@@ -1,0 +1,12 @@
+services:
+  simplyusage:
+    build: .
+    container_name: simplyusage
+    restart: unless-stopped
+    env_file: secrets.env
+    volumes:
+      - ./data:/data
+      # SimplyPrint bridge's log dir (bind-mounted out of the bridge container),
+      # used for printers with <PREFIX>_SOURCE=bridge-log. Adjust the path if
+      # the bridge's compose project lives elsewhere.
+      - ../simplyprint/logs:/bridge-logs:ro

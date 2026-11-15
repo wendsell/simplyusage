@@ -1,5 +1,9 @@
 .git
+.github
 data
 tests
+site
+docs
+_site
 **/__pycache__
 secrets.env

@@ -1,73 +1,82 @@
 # simplyusage
 
-Deducts filament usage from SimplyPrint spools for Bambu Lab prints started
-outside SimplyPrint (Bambu Studio / Orca LAN send, printer screen).
+**Accurate SimplyPrint spool weights for Bambu Lab prints you send from Bambu Studio or Orca.**
 
-The SimplyPrint bridge reports external jobs (start, progress, finish) but
-sends no filament usage, so SimplyPrint never deducts from spools for them.
+SimplyPrint only deducts filament for prints it starts itself. Send a job
+straight from your slicer and SimplyPrint logs the print but leaves your
+spools untouched. simplyusage fills the gap: when a print ends, it reads the
+real per-color usage from the print file and deducts it from the spool in each
+AMS slot that was used.
 
-## How it works
+[Website](https://wendsell.github.io/simplyusage/) ·
+[Setup guide](docs/SETUP.md) ·
+[Releases](https://github.com/wendsell/simplyusage/releases) ·
+[Report a problem](https://github.com/wendsell/simplyusage/issues)
 
-1. **Job events.** Each printer's MQTT report stream is followed, either over
-   its own LAN connection (`<PRINTER>_SOURCE=mqtt`) or by tailing the
-   SimplyPrint bridge's per-printer `mqtt.log` (`bridge-log`). Use
-   `bridge-log` for printers that limit LAN MQTT connections (the A1 allows
-   very few; the bridge already holds one). On print start the printer echoes
-   the `project_file` command, which includes `ams_mapping` (project filament
-   to AMS tray).
-2. **Usage.** When a job ends (FINISH / FAILED), the `.3mf` is downloaded from
-   the printer's SD card over implicit FTPS (port 990), and per-filament grams
-   are read from `Metadata/slice_info.config`. These include color-change
-   flush and prime tower, but not the start-up purge line. Failed or cancelled
-   prints are scaled by the progress reached.
-3. **Dedup.** After `DEDUP_DELAY` seconds, the job is skipped if SimplyPrint
-   already recorded usage for it (jobs it started itself).
-4. **Deduct.** For each filament, the spool assigned in SimplyPrint to that
-   printer and extruder (= AMS tray index) is found and `grams_remaining` is
-   lowered via `filament/AdjustWeight`.
-5. **Ledger.** Every handled job is appended to `data/ledger.jsonl`, which
-   also guards against double deduction. Per-printer job state is persisted,
-   so a restart mid-print keeps the AMS mapping.
+## Features
 
-Not handled: multi-color prints started from the printer screen (no
-mapping is reported), and external-spool prints unless `<PRINTER>_EXTERNAL_EXT`
-says which SimplyPrint extruder index the external spool uses.
+- **Multi-color aware.** Each filament is matched to its AMS slot and deducted
+  from that slot's spool.
+- **Real numbers.** Grams come from the slicer data inside the job's `.3mf`
+  (fetched from the printer's SD card), including color-change flush and prime
+  tower.
+- **Failed and cancelled prints** are deducted by how far they got.
+- **No double counting.** Jobs SimplyPrint already counted are skipped, and a
+  ledger makes sure each job is handled once, across restarts.
+- **No extra printer connections.** It can read printer reports from the
+  SimplyPrint bridge's logs, so it doesn't compete for the printer's few LAN
+  connection slots.
+- **Runs anywhere the bridge does:** `linux/amd64`, `linux/arm64`,
+  `linux/arm/v7`.
 
-## Setup
+## Quick start
 
 ```sh
-cp secrets.example.env secrets.env   # then fill it in
-docker compose up -d --build
+docker pull ghcr.io/wendsell/simplyusage:1
 ```
 
-For `bridge-log`, the bridge's log dir must be bind-mounted out of its
-container. Its state dir must also persist, or recreating the container wipes
-its printer list:
-
-```yaml
-# SimplyPrint bridge compose.yaml
-services:
-  simplyprint-client:
-    image: simplyprint/simplyprint-client
-    network_mode: host
-    restart: always
-    volumes:
-      - simplyprint_data:/root/.config/SimplyPrint
-      - simplyprint_share:/root/.local/share/SimplyPrint   # printer list / state DB
-      - ./logs:/root/.local/state/SimplyPrint/log          # read by simplyusage
-volumes:
-  simplyprint_data:
-  simplyprint_share:
-```
-
-simplyusage's `compose.yaml` expects that log dir at `../simplyprint/logs`.
+Setup takes a few steps, one of which protects the SimplyPrint bridge from
+losing its printer list. **Follow the [setup guide](docs/SETUP.md).**
 
 ## Commands
 
 ```sh
-# Process one job by hand (dry run unless --apply)
-python -m simplyusage --env-file secrets.env simulate A1 "file.gcode.3mf" --mapping 0,1
-
-# Tests
-python -m unittest discover -s tests -t .
+docker compose run --rm simplyusage list-printers      # SimplyPrint printer IDs + assigned spools
+docker compose run --rm simplyusage simulate A1 "file.gcode.3mf" --mapping 0,1   # dry run one job
+docker compose run --rm simplyusage --version
 ```
+
+## Development
+
+```sh
+pip install -r requirements.txt
+python -m unittest discover -s tests -t .
+python -m simplyusage --env-file secrets.env list-printers
+```
+
+Releases: bump `__version__` in `simplyusage/__init__.py`, then push a tag
+`vX.Y.Z`. The release workflow runs the tests, builds the multi-arch image,
+pushes it to `ghcr.io/wendsell/simplyusage`, and publishes a GitHub Release.
+
+## License
+
+simplyusage is free software: you can redistribute it and/or modify it under
+the terms of the [GNU General Public License](LICENSE) as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+
+It is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+Copyright (C) 2026 wendsell.
+
+The container image includes the complete source code, as Python files, along
+with this license. Its one dependency, Eclipse Paho MQTT, is dual-licensed
+under the EPL-2.0 and the Eclipse Distribution License 1.0 (BSD-3-Clause);
+simplyusage uses it under the latter, which is GPL-compatible.
+
+---
+
+simplyusage is an independent project and is not affiliated with or endorsed
+by SimplyPrint or Bambu Lab.

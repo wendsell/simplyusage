@@ -1,0 +1,84 @@
+name: Release
+
+# Push a tag like v1.2.3 to test, build the multi-arch image, push it to
+# ghcr.io/wendsell/simplyusage, and publish a GitHub Release.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -t . -v
+      - name: Tag matches __version__
+        run: |
+          v=$(python -c "import simplyusage; print(simplyusage.__version__)")
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != __version__ $v"; exit 1; }
+
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Release notes
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          {
+            echo "## Install"
+            echo
+            echo '```sh'
+            echo "docker pull ghcr.io/${GITHUB_REPOSITORY}:${v}"
+            echo '```'
+            echo
+            echo "Images for \`linux/amd64\`, \`linux/arm64\` and \`linux/arm/v7\` (Raspberry Pi 2 and newer)."
+            echo "Tags: \`${v}\`, \`${v%.*}\`, \`${v%%.*}\`, \`latest\`."
+            echo
+            echo "First time? Follow the [setup guide](https://wendsell.github.io/simplyusage/setup.html)."
+            echo
+            echo "simplyusage is free software, licensed under the GNU GPL v3 or later."
+          } > notes.md
+      - uses: softprops/action-gh-release@v3
+        with:
+          body_path: notes.md
+          generate_release_notes: true

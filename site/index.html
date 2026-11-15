@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>simplyusage: SimplyPrint spool tracking for Bambu prints sent from your slicer</title>
+<meta name="description" content="SimplyPrint only deducts filament for prints it starts. simplyusage deducts the real per-color usage for Bambu Lab prints sent from Bambu Studio or Orca.">
+<meta property="og:title" content="simplyusage">
+<meta property="og:description" content="Accurate SimplyPrint spool weights for Bambu Lab prints you send from Bambu Studio or Orca.">
+<link rel="canonical" href="https://wendsell.github.io/simplyusage/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%230f9b8e'/%3E%3Ccircle cx='32' cy='32' r='11' fill='%23f8faf9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span>simplyusage</a>
+    <nav>
+      <a href="setup.html">Setup guide</a>
+      <a class="hide-sm" href="https://github.com/wendsell/simplyusage/releases">Releases</a>
+      <a href="https://github.com/wendsell/simplyusage">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="kicker">SimplyPrint × Bambu Lab</span>
+      <h1>Every gram counted.</h1>
+      <p class="lede">SimplyPrint only deducts filament for prints it starts. Send a job straight from Bambu Studio or Orca and your spools never move.</p>
+      <p class="lede">simplyusage reads the real per-color usage from each finished print and deducts it from the spool in each AMS slot that printed it.</p>
+      <div class="btns">
+        <a class="btn primary" href="setup.html">Set it up</a>
+        <a class="btn ghost" href="https://github.com/wendsell/simplyusage">Source on GitHub</a>
+      </div>
+      <p class="version">Version {{version}} · Docker image for x86 and ARM · Free software (GPL-3.0)</p>
+    </div>
+    <div class="term" role="img" aria-label="simplyusage log output deducting four colors from four spools after a multi-color print">
+      <div class="bar"><i></i><i></i><i></i></div>
+<pre><span class="dim">$ docker compose logs -f simplyusage</span>
+<span class="dim">08:23:15</span> A1: job queued <span class="k">Multicolor_AMS_test.3mf</span>
+         ams_mapping=[0, 1, 2, 3]
+<span class="dim">08:36:09</span> A1: job ended state=FINISH
+<span class="dim">08:37:10</span> A1: Multicolor_AMS_test.3mf <span class="ok">-&gt; ok</span>
+  slot 0  Yellow      −0.59 g   828.00 → 827.41
+  slot 1  Pine Green  −0.35 g   840.00 → 839.65
+  slot 2  Red         −0.50 g   900.00 → 899.50
+  slot 3  White       −0.60 g   600.00 → 599.40</pre>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="sub">It runs next to the SimplyPrint bridge and works from what the printer already reports, so nothing changes about how you print.</p>
+    <div class="steps">
+      <div class="step"><h3>Print starts</h3><p>The printer announces which AMS slot feeds each filament in the file.</p></div>
+      <div class="step"><h3>Print ends</h3><p>simplyusage fetches the job's <code>.3mf</code> from the printer's SD card and reads the grams per color.</p></div>
+      <div class="step"><h3>Already counted?</h3><p>If SimplyPrint started the print and logged usage itself, the job is skipped.</p></div>
+      <div class="step"><h3>Spools updated</h3><p>Each slot's spool in SimplyPrint gets its remaining weight lowered by what was used.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>What you get</h2>
+    <div class="grid">
+      <div class="card"><h3>Multi-color, per slot</h3><p>Every filament in the print is matched to its AMS slot and deducted from that slot's spool.</p></div>
+      <div class="card"><h3>Real numbers</h3><p>Usage comes from the slicer data in the print file, including color-change flush and the prime tower.</p></div>
+      <div class="card"><h3>Failed prints too</h3><p>Cancelled or failed prints are deducted by how far they got.</p></div>
+      <div class="card"><h3>Never twice</h3><p>A ledger records every job, so restarts and SimplyPrint's own prints never double count.</p></div>
+      <div class="card"><h3>No extra connections</h3><p>Reads printer reports from the bridge's logs. Bambu printers allow only a few LAN clients, and this doesn't take one.</p></div>
+      <div class="card"><h3>Runs where the bridge runs</h3><p>One small container for <code>amd64</code>, <code>arm64</code> and <code>arm/v7</code>. A Raspberry Pi is plenty.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap split">
+    <div>
+      <h2>Quick start</h2>
+      <p>The image is on GitHub's container registry:</p>
+<pre><code>docker pull ghcr.io/wendsell/simplyusage:1</code></pre>
+      <p>Setup takes about fifteen minutes. One step protects the SimplyPrint bridge from losing its printer list when its container is recreated, so <a href="setup.html">follow the guide</a> rather than winging it.</p>
+      <div class="btns"><a class="btn primary" href="setup.html">Open the setup guide</a></div>
+    </div>
+    <div class="free">
+      <h2>Free software</h2>
+      <p>simplyusage is free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License v3 or later</a>. You're free to run it, study how it works, change it, and share it, changed or not.</p>
+      <p>The container ships the complete source, and the <a href="https://github.com/wendsell/simplyusage">repository</a> has the full history. No telemetry, no accounts, no servers besides your own and the SimplyPrint API you already use.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a href="https://github.com/wendsell/simplyusage/issues">Report a problem</a> · <a href="https://github.com/wendsell/simplyusage">GitHub</a> · <a href="https://github.com/wendsell/simplyusage/blob/main/LICENSE">GPL-3.0-or-later</a>
+    · More from wendsell: <a href="https://wendsell.github.io/spoolghetti/">Spoolghetti</a>, <a href="https://wendsell.github.io/P1S-BMCU-Lifeline/">P1S BMCU Lifeline</a><br>
+    simplyusage is an independent project and is not affiliated with or endorsed by SimplyPrint or Bambu Lab.
+  </div>
+</footer>
+</body>
+</html>

@@ -1,3 +1,20 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 wendsell
+#
+# This file is part of simplyusage.
+#
+# simplyusage is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# simplyusage is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# simplyusage. If not, see <https://www.gnu.org/licenses/>.
+
 from __future__ import annotations
 
 import os
@@ -42,7 +59,7 @@ def _truthy(v: str | None) -> bool:
     return (v or "").strip().lower() in ("1", "true", "yes", "on")
 
 
-def load(env: dict[str, str] | None = None) -> Config:
+def load(env: dict[str, str] | None = None, require_printers: bool = True) -> Config:
     env = dict(os.environ if env is None else env)
     missing: list[str] = []
 
@@ -60,7 +77,8 @@ def load(env: dict[str, str] | None = None) -> Config:
         dedup_delay=float(env.get("DEDUP_DELAY", "60") or 60),
         bridge_log_dir=Path(env.get("BRIDGE_LOG_DIR", "/bridge-logs")),
     )
-    for name in [p.strip() for p in env.get("PRINTERS", "").split(",") if p.strip()]:
+    names = [p.strip() for p in env.get("PRINTERS", "").split(",") if p.strip()]
+    for name in names if require_printers else []:
         sp_id = req(f"{name}_SIMPLYPRINT_ID")
         ext = env.get(f"{name}_EXTERNAL_EXT", "").strip()
         cfg.printers.append(PrinterConfig(
@@ -74,7 +92,7 @@ def load(env: dict[str, str] | None = None) -> Config:
         ))
         if cfg.printers[-1].source not in ("mqtt", "bridge-log"):
             raise SystemExit(f"{name}_SOURCE must be mqtt or bridge-log")
-    if not cfg.printers:
+    if require_printers and not cfg.printers:
         missing.append("PRINTERS")
     if missing:
         raise SystemExit(f"Missing config: {', '.join(missing)}")

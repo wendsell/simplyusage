@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}} · simplyusage</title>
+<meta name="description" content="Step-by-step setup for simplyusage: SimplyPrint bridge volumes, API key, printer details, configuration, a test print and troubleshooting.">
+<link rel="canonical" href="https://wendsell.github.io/simplyusage/setup.html">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%230f9b8e'/%3E%3Ccircle cx='32' cy='32' r='11' fill='%23f8faf9'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span>simplyusage</a>
+    <nav>
+      <a href="./">Home</a>
+      <a class="hide-sm" href="{{repo}}/releases">Releases</a>
+      <a href="{{repo}}">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contents">
+    <p class="toc-title">Contents</p>
+    <ol>
+{{nav}}
+    </ol>
+    <p class="meta">simplyusage {{version}}<br><a href="{{repo}}/blob/main/docs/SETUP.md">Edit this guide</a></p>
+  </nav>
+
+  <main class="doc">
+    <h1>{{title}}</h1>
+    <details class="toc-mobile">
+      <summary>Contents</summary>
+      <ol>
+{{nav}}
+      </ol>
+    </details>
+{{body}}
+  </main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <a href="{{repo}}/issues">Stuck? Open an issue</a> · <a href="{{repo}}">GitHub</a> · <a href="{{repo}}/blob/main/LICENSE">GPL-3.0-or-later</a><br>
+    simplyusage is an independent project and is not affiliated with or endorsed by SimplyPrint or Bambu Lab.
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    if (!links.length || !('IntersectionObserver' in window)) return;
+    var byId = {}, current = null;
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var a = byId[e.target.id];
+        if (!a || a === current) return;
+        if (current) current.classList.remove('active');
+        a.classList.add('active');
+        current = a;
+      });
+    }, { rootMargin: '0px 0px -70% 0px' });
+    Object.keys(byId).forEach(function (id) { var el = document.getElementById(id); if (el) obs.observe(el); });
+    document.querySelectorAll('.toc-mobile a').forEach(function (a) {
+      a.addEventListener('click', function () { a.closest('details').open = false; });
+    });
+  })();
+</script>
+</body>
+</html>

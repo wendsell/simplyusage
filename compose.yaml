@@ -1,12 +1,13 @@
 services:
   simplyusage:
-    build: .
+    image: ghcr.io/wendsell/simplyusage:1
+    # To build from source instead, replace the line above with:  build: .
     container_name: simplyusage
     restart: unless-stopped
     env_file: secrets.env
     volumes:
       - ./data:/data
-      # SimplyPrint bridge's log dir (bind-mounted out of the bridge container),
-      # used for printers with <PREFIX>_SOURCE=bridge-log. Adjust the path if
-      # the bridge's compose project lives elsewhere.
+      # The SimplyPrint bridge's log dir (bind-mounted out of the bridge
+      # container; see the setup guide). Needed for <PRINTER>_SOURCE=bridge-log.
+      # Adjust the path to wherever your bridge's compose project lives.
       - ../simplyprint/logs:/bridge-logs:ro
